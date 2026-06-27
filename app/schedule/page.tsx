@@ -10,7 +10,10 @@ interface MatchesResponse {
   matches: Match[];
 }
 
-function Crest({ team }: { team: { crest: string | null; name: string } }) {
+function Crest({ team }: { team: { crest: string | null; name: string } | null | undefined }) {
+  if (!team) {
+    return <div className="h-7 w-7 rounded-full border border-dashed border-chalk/20" />;
+  }
   if (team.crest) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={team.crest} alt={team.name} className="h-7 w-7 object-contain" />;

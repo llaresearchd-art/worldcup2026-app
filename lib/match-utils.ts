@@ -46,7 +46,8 @@ export function totalMatchesCount(matches: Match[]): number {
   return matches.length;
 }
 
-export function teamDisplayName(team: { shortName: string | null; name: string }): string {
+export function teamDisplayName(team: { shortName: string | null; name: string } | null | undefined): string {
+  if (!team) return 'TBD';
   return team.shortName || team.name;
 }
 

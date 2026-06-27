@@ -14,8 +14,10 @@
 // Net effect: data is at most ~25 seconds old, but feels live, and we never get close
 // to the upstream rate limit even with a big group watching together.
 
-import { kv } from '@vercel/kv';
+import { getRedis } from './redis';
 import { fetchAllMatches, fetchTeams, fetchTopScorers, Match, TeamFull, ScorerEntry } from './football-api';
+
+const kv = getRedis();
 
 export const REFRESH_INTERVAL_MS = 25_000; // how often we hit football-data.org
 export const FRONTEND_POLL_MS = 20_000; // how often the browser polls OUR cache

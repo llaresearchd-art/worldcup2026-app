@@ -2,7 +2,10 @@
 import { Match } from '@/lib/football-api';
 import { teamDisplayName } from '@/lib/match-utils';
 
-function TeamCrest({ team }: { team: { crest: string | null; name: string } }) {
+function TeamCrest({ team }: { team: { crest: string | null; name: string } | null | undefined }) {
+  if (!team) {
+    return <div className="h-9 w-9 rounded-full border border-dashed border-chalk/20" />;
+  }
   if (team.crest) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={team.crest} alt={team.name} className="h-9 w-9 object-contain" />;
@@ -16,8 +19,8 @@ function TeamCrest({ team }: { team: { crest: string | null; name: string } }) {
 
 export default function LiveScoreCard({ match }: { match: Match }) {
   const scorers = match.goals ?? [];
-  const homeScorers = scorers.filter((g) => g.team.id === match.homeTeam.id);
-  const awayScorers = scorers.filter((g) => g.team.id === match.awayTeam.id);
+  const homeScorers = scorers.filter((g) => match.homeTeam && g.team.id === match.homeTeam.id);
+  const awayScorers = scorers.filter((g) => match.awayTeam && g.team.id === match.awayTeam.id);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-floodlight/30 bg-gradient-to-b from-pitch-mid to-pitch-dark p-4 shadow-lg shadow-black/20 animate-slideUp">

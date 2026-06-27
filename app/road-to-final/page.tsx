@@ -10,8 +10,16 @@ interface MatchesResponse {
   matches: Match[];
 }
 
+// Verified against football-data.org's documented Match.stage values for knockout
+// tournaments (ROUND_OF_16, QUARTER_FINALS, SEMI_FINALS, FINAL). The 2026 World Cup's
+// expanded 48-team format also has a Round of 32, which may appear as a different
+// stage name than guessed initially - the STAGE_ORDER fallback below means any stage
+// name we haven't mapped yet still shows up (under its raw name) instead of vanishing
+// or crashing.
 const STAGE_LABELS: Record<string, string> = {
+  ROUND_OF_32: 'Round of 32',
   LAST_32: 'Round of 32',
+  ROUND_OF_16: 'Round of 16',
   LAST_16: 'Round of 16',
   QUARTER_FINALS: 'Quarter-finals',
   SEMI_FINALS: 'Semi-finals',
@@ -19,9 +27,22 @@ const STAGE_LABELS: Record<string, string> = {
   FINAL: 'Final',
 };
 
-const STAGE_ORDER = ['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL'];
+const STAGE_ORDER = [
+  'ROUND_OF_32',
+  'LAST_32',
+  'ROUND_OF_16',
+  'LAST_16',
+  'QUARTER_FINALS',
+  'SEMI_FINALS',
+  'THIRD_PLACE',
+  'FINAL',
+];
 
-function Crest({ team }: { team: { crest: string | null; name: string } | null }) {
+function stageLabel(stage: string): string {
+  return STAGE_LABELS[stage] || stage.replace(/_/g, ' ');
+}
+
+function Crest({ team }: { team: { crest: string | null; name: string } | null | undefined }) {
   if (!team) {
     return <div className="h-6 w-6 rounded-full border border-dashed border-chalk/20" />;
   }
@@ -40,11 +61,24 @@ export default function RoadToFinalPage() {
   const { data, loading, error } = usePolling<MatchesResponse>('/api/matches', 30_000);
   const matches = data?.matches ?? [];
 
-  const stages = STAGE_ORDER.map((stage) => ({
-    stage,
-    label: STAGE_LABELS[stage],
-    fixtures: matches.filter((m) => m.stage === stage),
-  })).filter((s) => s.fixtures.length > 0);
+  // Build the list of stages from STAGE_ORDER first (for correct left-to-right
+  // ordering), then append any other stage actually present in the data that we
+  // didn't anticipate (e.g. group stage matches are deliberately excluded here -
+  // only non-group knockout stages should appear on this bracket page).
+  const knownStages = new Set(STAGE_ORDER);
+  const presentStages: string[] = Array.from(new Set(matches.map((m) => m.stage)));
+  const extraStages = presentStages.filter(
+    (s: string) => !knownStages.has(s) && s !== 'GROUP_STAGE'
+  );
+  const orderedStages = [...STAGE_ORDER, ...extraStages];
+
+  const stages = orderedStages
+    .map((stage) => ({
+      stage,
+      label: stageLabel(stage),
+      fixtures: matches.filter((m) => m.stage === stage),
+    }))
+    .filter((s) => s.fixtures.length > 0);
 
   return (
     <main>
@@ -105,6 +139,9 @@ export default function RoadToFinalPage() {
                           {m.score.fullTime.away ?? '–'}
                         </span>
                       </div>
+                      {m.venue && (
+                        <p className="mt-1.5 truncate text-center text-[9px] text-chalk/30">{m.venue}</p>
+                      )}
                     </div>
                   );
                 })}

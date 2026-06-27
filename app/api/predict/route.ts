@@ -1,10 +1,11 @@
 // app/api/predict/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import { getRedis } from '@/lib/redis';
 import { cookies } from 'next/headers';
 import { randomUUID } from 'crypto';
 
 const VISITOR_COOKIE = 'wc26_visitor';
+const kv = getRedis();
 
 function getOrCreateVisitorId(): string {
   const store = cookies();

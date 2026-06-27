@@ -14,6 +14,21 @@ interface PredictResponse {
   predictions: Record<string, string>;
 }
 
+function Crest({ team }: { team: { crest: string | null; name: string } | null }) {
+  if (!team) {
+    return <div className="h-5 w-5 rounded-full border border-dashed border-chalk/20" />;
+  }
+  if (team.crest) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={team.crest} alt={team.name} className="h-5 w-5 object-contain" />;
+  }
+  return (
+    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-chalk/10 text-[8px] font-bold text-chalk/60">
+      {team.name.slice(0, 2).toUpperCase()}
+    </div>
+  );
+}
+
 function pickLabel(pick: string, m: Match) {
   if (pick === 'HOME') return teamDisplayName(m.homeTeam);
   if (pick === 'AWAY') return teamDisplayName(m.awayTeam);
@@ -78,8 +93,12 @@ export default function PredictionPage() {
           return (
             <div key={m.id} className="rounded-xl border border-chalk/10 bg-pitch-dark/30 px-4 py-3">
               <div className="mb-1.5 flex items-center justify-between text-[11px] text-chalk/40">
-                <span>
-                  {teamDisplayName(m.homeTeam)} vs {teamDisplayName(m.awayTeam)}
+                <span className="flex items-center gap-1.5">
+                  <Crest team={m.homeTeam} />
+                  {teamDisplayName(m.homeTeam)}
+                  <span className="text-chalk/25">vs</span>
+                  {teamDisplayName(m.awayTeam)}
+                  <Crest team={m.awayTeam} />
                 </span>
                 {result && (
                   <span className={correctPick ? 'text-floodlight' : 'text-goal'}>

@@ -73,6 +73,11 @@ export default function SquadPage() {
             </div>
           </div>
 
+          <div className="mb-4 rounded-lg border border-chalk/10 bg-pitch-dark/20 px-3 py-2 text-[11px] text-chalk/40">
+            Club affiliations aren&apos;t available from the free data source this app
+            uses — only name, position, and shirt number are shown below.
+          </div>
+
           {POSITION_ORDER.map((pos) => {
             const players = selected.squad.filter((p) => p.position === pos);
             if (players.length === 0) return null;

@@ -10,7 +10,10 @@ interface MatchesResponse {
   matches: Match[];
 }
 
-function Crest({ team }: { team: { crest: string | null; name: string } }) {
+function Crest({ team }: { team: { crest: string | null; name: string } | null }) {
+  if (!team) {
+    return <div className="h-7 w-7 rounded-full border border-dashed border-chalk/20" />;
+  }
   if (team.crest) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={team.crest} alt={team.name} className="h-7 w-7 object-contain" />;
@@ -43,6 +46,9 @@ export default function ResultPage() {
           const { date } = formatKickoff(m.utcDate);
           const homeWin = (m.score.fullTime.home ?? 0) > (m.score.fullTime.away ?? 0);
           const awayWin = (m.score.fullTime.away ?? 0) > (m.score.fullTime.home ?? 0);
+          const scorers = m.goals ?? [];
+          const homeScorers = scorers.filter((g) => m.homeTeam && g.team.id === m.homeTeam.id);
+          const awayScorers = scorers.filter((g) => m.awayTeam && g.team.id === m.awayTeam.id);
           return (
             <div
               key={m.id}
@@ -69,6 +75,29 @@ export default function ResultPage() {
                   <Crest team={m.awayTeam} />
                 </div>
               </div>
+
+              {(homeScorers.length > 0 || awayScorers.length > 0) && (
+                <div className="mt-2.5 grid grid-cols-2 gap-2 border-t border-chalk/10 pt-2 text-[11px] text-chalk/50">
+                  <ul className="space-y-0.5">
+                    {homeScorers.map((g, i) => (
+                      <li key={i}>
+                        ⚽ {g.scorer.name} {g.minute ? `${g.minute}'` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                  <ul className="space-y-0.5 text-right">
+                    {awayScorers.map((g, i) => (
+                      <li key={i}>
+                        {g.scorer.name} {g.minute ? `${g.minute}'` : ''} ⚽
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {m.venue && (
+                <p className="mt-2 text-center text-[10px] text-chalk/30">{m.venue}</p>
+              )}
             </div>
           );
         })}

@@ -41,8 +41,8 @@ export interface Match {
   stage: string;
   group: string | null;
   venue?: string | null;
-  homeTeam: TeamRef;
-  awayTeam: TeamRef;
+  homeTeam: TeamRef | null;
+  awayTeam: TeamRef | null;
   score: {
     winner: string | null;
     duration: string;
@@ -58,6 +58,7 @@ export interface ScorerEntry {
   goals: number;
   assists: number | null;
   penalties: number | null;
+  playedMatches: number | null;
 }
 
 export interface SquadPlayer {

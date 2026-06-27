@@ -44,7 +44,10 @@ export default function TopScorersPage() {
             )}
             <div className="flex-1">
               <p className="text-sm font-semibold text-chalk">{s.player.name}</p>
-              <p className="text-[11px] text-chalk/40">{s.team.shortName || s.team.name}</p>
+              <p className="text-[11px] text-chalk/40">
+                {s.team.shortName || s.team.name}
+                {s.playedMatches != null && ` · ${s.playedMatches} matches played`}
+              </p>
             </div>
             <div className="text-right">
               <p className="font-score text-lg font-bold text-chalk">{s.goals}</p>

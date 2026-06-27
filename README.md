@@ -39,6 +39,7 @@ You'll also need a Vercel KV (or any Redis-compatible) database connected for pr
 ## Known limitations (read before relying on this for match day)
 
 1. **Not millisecond-real-time.** ~20-30 second delay by design, to stay free.
-2. **No player photos.** Free tier data has no photo field.
-3. **2026 bracket stage names unverified.** The Round-of-32 format is new for this tournament; the stage enum values used in `app/road-to-final/page.tsx` are my best inference and may need a tweak once real knockout data is visible.
+2. **No player photos or club affiliations.** The free data source only provides name, position, shirt number, and nationality for national-team squads — there's an honest note about this directly on the Squad page now.
+3. **2026 bracket stage names.** Fixed to check both `LAST_32`/`ROUND_OF_32` naming and gracefully display any unrecognized stage name rather than crash — but the exact stage value football-data.org uses for the expanded Round of 32 hasn't been confirmed against live knockout data yet, since the group stage was still underway when this was last checked.
 4. **Free database tier limits.** Vercel KV's free tier has generous but finite request limits — fine for personal/friend-group use, not built for viral scale.
+5. **Error recovery.** Added error boundaries (`app/error.tsx`, `app/road-to-final/error.tsx`) so an unexpected data shape shows a friendly "Try again / Back to Home" screen instead of a frozen page.

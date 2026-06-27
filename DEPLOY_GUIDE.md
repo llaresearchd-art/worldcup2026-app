@@ -46,9 +46,11 @@ Still on that same Vercel import screen (or afterwards, in Project Settings):
 
 ### 4b. Create the free database (this stores your predictions & favorite teams)
 1. In your Vercel project, go to the **Storage** tab.
-2. Click **Create Database** → choose **KV** (it's free, powered by Upstash Redis).
-3. Name it anything, click **Create**, then click **Connect to Project** and select your `worldcup2026-app` project.
-4. Vercel automatically adds the two required keys (`KV_REST_API_URL` and `KV_REST_API_TOKEN`) for you — you don't need to type these in.
+2. You won't see a "KV" button anymore — Vercel retired that and moved it into a **Marketplace** of storage providers. Look for **Upstash** (sometimes labeled "Upstash for Redis").
+3. Click it, then click **Add Integration** / **Install**.
+4. Choose the **Free** plan when asked.
+5. When it asks which project to connect, choose your `worldcup2026-app` project, then confirm.
+6. This automatically adds the right environment variables to your project — you don't need to type anything in by hand.
 
 ### 4c. Deploy
 1. Go back to the **Deployments** tab (or click **Deploy** if you're still on the import screen).

@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { Match } from '@/lib/football-api';
 import { countdownParts, formatKickoff, teamDisplayName } from '@/lib/match-utils';
 
-function Crest({ team }: { team: { crest: string | null; name: string } }) {
+function Crest({ team }: { team: { crest: string | null; name: string } | null | undefined }) {
+  if (!team) {
+    return <div className="h-10 w-10 rounded-full border border-dashed border-chalk/20" />;
+  }
   if (team.crest) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={team.crest} alt={team.name} className="h-10 w-10 object-contain" />;
@@ -49,6 +52,11 @@ export default function UpNextCard({
           {date} · {time}
         </span>
       </div>
+      {match.venue && (
+        <p className="-mt-2 mb-3 text-center text-[10px] normal-case tracking-normal text-chalk/30">
+          {match.venue}
+        </p>
+      )}
 
       <div className="mb-4 grid grid-cols-3 items-center gap-2">
         <div className="flex flex-col items-center gap-1 text-center">
