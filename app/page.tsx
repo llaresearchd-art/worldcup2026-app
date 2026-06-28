@@ -13,6 +13,7 @@ import LiveScoreCard from '@/components/LiveScoreCard';
 import UpNextCard from '@/components/UpNextCard';
 import TopLinks from '@/components/TopLinks';
 import Footer from '@/components/Footer';
+import NotificationOptIn from '@/components/NotificationOptIn';
 import { useEffect, useState, useCallback } from 'react';
 
 interface MatchesResponse {
@@ -107,6 +108,8 @@ export default function HomePage() {
             onPredict={(pick) => handlePredict(upNext.id, pick)}
           />
         )}
+
+        <NotificationOptIn />
 
         {/* Quick links grid */}
         <div className="grid grid-cols-2 gap-3 pt-2">

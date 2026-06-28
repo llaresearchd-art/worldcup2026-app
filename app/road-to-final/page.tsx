@@ -2,7 +2,7 @@
 // app/road-to-final/page.tsx
 import { usePolling } from '@/lib/use-polling';
 import { Match } from '@/lib/football-api';
-import { teamDisplayName } from '@/lib/match-utils';
+import { teamDisplayName, formatKickoff } from '@/lib/match-utils';
 import PageHeader from '@/components/PageHeader';
 import Footer from '@/components/Footer';
 
@@ -70,8 +70,26 @@ function FixtureCard({ m }: { m: Match }) {
   const homeWin = finished && typeof homeScore === 'number' && typeof awayScore === 'number' && homeScore > awayScore;
   const awayWin = finished && typeof homeScore === 'number' && typeof awayScore === 'number' && awayScore > homeScore;
 
+  let dateLabel = '';
+  let timeLabel = '';
+  try {
+    if (m.utcDate) {
+      const formatted = formatKickoff(m.utcDate);
+      dateLabel = formatted.date;
+      timeLabel = formatted.time;
+    }
+  } catch {
+    dateLabel = '';
+    timeLabel = '';
+  }
+
   return (
     <div className="rounded-lg border border-chalk/10 bg-pitch-dark/40 px-3 py-2">
+      {(dateLabel || timeLabel) && (
+        <p className="mb-1.5 text-center text-[9px] uppercase tracking-wide text-chalk/40">
+          {dateLabel} {timeLabel && `· ${timeLabel}`}
+        </p>
+      )}
       <div
         className={`mb-1.5 flex items-center justify-between gap-2 ${
           homeWin ? 'opacity-100' : finished ? 'opacity-40' : ''

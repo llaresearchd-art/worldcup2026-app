@@ -93,19 +93,6 @@ export default function LiveScoreCard({ match }: { match: Match }) {
           </ul>
         </div>
       )}
-
-      <a
-        href={`https://www.google.com/search?q=${encodeURIComponent(
-          `watch ${teamDisplayName(match.homeTeam ?? { name: 'TBD', shortName: null })} vs ${teamDisplayName(
-            match.awayTeam ?? { name: 'TBD', shortName: null }
-          )} live stream`
-        )}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-3 block rounded-lg border border-chalk/15 px-3 py-2 text-center text-[11px] font-medium text-chalk/70 transition-colors hover:border-floodlight/40 hover:text-chalk"
-      >
-        📺 Find where to watch this match
-      </a>
     </div>
   );
 }

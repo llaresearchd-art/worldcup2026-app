@@ -64,7 +64,37 @@ Your app now lives at a URL like `worldcup2026-app.vercel.app`. Copy that link a
 
 ---
 
-## A few honest notes
+## Part 6 — Set up push notifications (new!)
+
+This gives you match reminders, goal alerts, and final results as phone notifications, even with the app closed. A few extra one-time steps:
+
+### 6a. Generate your notification keys
+1. After your app is deployed, visit this URL in your browser (replace with your real app URL):
+   `https://your-app.vercel.app/api/push/generate-keys`
+2. You'll see two long codes: `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`. Copy both somewhere safe.
+
+### 6b. Add them to Vercel
+1. In Vercel, go to your project → **Settings** → **Environment Variables**.
+2. Add `VAPID_PUBLIC_KEY` with the value you copied.
+3. Add `VAPID_PRIVATE_KEY` with its value.
+4. Add `VAPID_SUBJECT` with value `mailto:youremail@example.com` (use your real email — this is required by the push standard, not shown to anyone).
+5. Redeploy (Deployments tab → ⋯ → Redeploy) so these take effect.
+
+### 6c. Set up the free scheduler (so notifications actually check matches automatically)
+Vercel's own free scheduler only runs once a day — too slow for live goal alerts. Instead, use a free external one:
+1. Go to **https://cron-job.org** and create a free account.
+2. Create a new cron job:
+   - **URL**: `https://your-app.vercel.app/api/cron/notifications`
+   - **Schedule**: every 3-5 minutes
+3. Save it. That's it — it will now call your app every few minutes to check for reminders, goals, and results.
+
+### 6d. Turn on notifications in the app
+1. Open your app on your phone.
+2. On the homepage, tap **"🔔 Get match reminders & goal alerts"**.
+3. Allow notifications when your phone/browser asks.
+4. **iPhone only**: notifications only work if you first add the site to your home screen (Safari → Share button → Add to Home Screen) — a plain Safari tab can't receive them on iOS. Android works directly in the browser, no extra step.
+
+
 
 - **Refresh speed**: Live scores update roughly every 20-30 seconds, not instantly. This is intentional — it keeps the app free forever instead of needing a paid plan. It will still feel live while you're watching a match.
 - **Squad photos**: The free data source gives names, positions, and shirt numbers, but not player photos. I designed the Squad page around this so it still looks clean.
