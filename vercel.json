@@ -1,3 +1,0 @@
-{
-  "_comment": "Vercel's free/Hobby tier only allows cron jobs to run ONCE PER DAY - too infrequent for live match notifications. Instead, we use a free external scheduler (cron-job.org) to call /api/cron/notifications every 3-5 minutes. See DEPLOY_GUIDE.md for the 2-minute setup. No crons block needed here."
-}
