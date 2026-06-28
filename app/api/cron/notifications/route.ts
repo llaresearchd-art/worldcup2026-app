@@ -58,18 +58,69 @@ function isAuthorizedCronRequest(req: Request): boolean {
   return authHeader === `Bearer ${secret}`;
 }
 
+const BASELINE_KEY = 'wc26:notifications:baseline_done';
+
+// On the very first run ever, there could be dozens of already-finished matches and
+// already-passed reminder windows with nothing marked as "sent" yet (since the
+// tracking only just started existing). Without this guard, the very first run would
+// fire a notification for every single one of those past events at once - a flood,
+// not a bug in any individual match's logic. This function runs once, marks
+// everything that's already in the past as "already handled" without notifying
+// anyone, and only allows real notifications for things that happen FROM THIS POINT
+// FORWARD.
+async function ensureBaseline(matches: Match[], now: number) {
+  const baselineAlreadyRun = await kv.get(BASELINE_KEY);
+  if (baselineAlreadyRun) return;
+
+  for (const m of matches) {
+    if (!m || m.id == null || !m.utcDate) continue;
+    const kickoff = new Date(m.utcDate).getTime();
+    const minutesToKickoff = (kickoff - now) / 60_000;
+
+    // Mark any reminder window that has already passed as sent, so it won't fire
+    // retroactively.
+    if (minutesToKickoff <= 24 * 60) await markSent(m.id, 'reminder_24h');
+    if (minutesToKickoff <= 3 * 60) await markSent(m.id, 'reminder_3h');
+    if (minutesToKickoff <= 30) await markSent(m.id, 'reminder_30m');
+    if (minutesToKickoff <= 5) await markSent(m.id, 'reminder_5m');
+
+    // Mark already-finished matches as already notified, and baseline their current
+    // goal count so only NEW goals (from this point on) ever trigger a notification.
+    if (isFinished(m)) {
+      await markSent(m.id, 'final_result');
+    }
+    const currentGoalCount = (m.goals ?? []).length;
+    if (currentGoalCount > 0) {
+      await setTrackedGoalCount(m.id, currentGoalCount);
+    }
+  }
+
+  await kv.set(BASELINE_KEY, true);
+}
+
 export async function GET(req: Request) {
   if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const results: string[] = [];
+  const MAX_NOTIFICATIONS_PER_RUN = 10; // safety cap: even if something is wrong with
+  // the logic above, this guarantees a single run can never flood anyone the way the
+  // very first un-baselined run did. Real usage should never need more than 1-3 per
+  // run (one reminder, maybe a couple of simultaneous goals).
+  let sentThisRun = 0;
 
   try {
     const { data: matches } = await getMatches();
     const now = Date.now();
 
+    await ensureBaseline(matches, now);
+
     for (const m of matches) {
+      if (sentThisRun >= MAX_NOTIFICATIONS_PER_RUN) {
+        results.push('Safety cap reached for this run - stopping early.');
+        break;
+      }
       if (!m || m.id == null || !m.utcDate) continue;
       const kickoff = new Date(m.utcDate).getTime();
       const minutesToKickoff = (kickoff - now) / 60_000;
@@ -82,6 +133,7 @@ export async function GET(req: Request) {
       ];
 
       for (const window of reminderWindows) {
+        if (sentThisRun >= MAX_NOTIFICATIONS_PER_RUN) break;
         // Fire once minutesToKickoff drops to or below the window, but only if
         // we're still reasonably close to it (within a 15-minute grace period) -
         // this avoids firing every single past window if the cron job was paused
@@ -96,12 +148,13 @@ export async function GET(req: Request) {
             });
             await markSent(m.id, window.kind);
             results.push(`Sent ${window.kind} for match ${m.id}`);
+            sentThisRun += 1;
           }
         }
       }
 
       // --- 5-minute warning ---
-      if (minutesToKickoff <= 5 && minutesToKickoff > -10) {
+      if (sentThisRun < MAX_NOTIFICATIONS_PER_RUN && minutesToKickoff <= 5 && minutesToKickoff > -10) {
         if (!(await alreadySent(m.id, 'reminder_5m'))) {
           await broadcastNotification({
             title: 'Kicking off soon!',
@@ -111,16 +164,18 @@ export async function GET(req: Request) {
           });
           await markSent(m.id, 'reminder_5m');
           results.push(`Sent 5-min warning for match ${m.id}`);
+          sentThisRun += 1;
         }
       }
 
       // --- Goal notifications (live matches only) ---
-      if (m.status === 'IN_PLAY' || m.status === 'PAUSED') {
+      if (sentThisRun < MAX_NOTIFICATIONS_PER_RUN && (m.status === 'IN_PLAY' || m.status === 'PAUSED')) {
         const goals = m.goals ?? [];
         const previousCount = await trackedGoalCount(m.id);
         if (goals.length > previousCount) {
           const newGoals = goals.slice(previousCount);
           for (const g of newGoals) {
+            if (sentThisRun >= MAX_NOTIFICATIONS_PER_RUN) break;
             const scoringTeam =
               m.homeTeam && g.team.id === m.homeTeam.id
                 ? m.homeTeam
@@ -135,6 +190,7 @@ export async function GET(req: Request) {
               url: '/',
               tag: `match-${m.id}-goal-${previousCount + newGoals.indexOf(g) + 1}`,
             });
+            sentThisRun += 1;
           }
           await setTrackedGoalCount(m.id, goals.length);
           results.push(`Sent ${newGoals.length} goal notification(s) for match ${m.id}`);
@@ -142,7 +198,7 @@ export async function GET(req: Request) {
       }
 
       // --- Final result notification ---
-      if (isFinished(m)) {
+      if (sentThisRun < MAX_NOTIFICATIONS_PER_RUN && isFinished(m)) {
         if (!(await alreadySent(m.id, 'final_result'))) {
           const home = m.score?.fullTime?.home ?? 0;
           const away = m.score?.fullTime?.away ?? 0;
@@ -154,6 +210,7 @@ export async function GET(req: Request) {
           });
           await markSent(m.id, 'final_result');
           results.push(`Sent final result for match ${m.id}`);
+          sentThisRun += 1;
         }
       }
     }
