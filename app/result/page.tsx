@@ -55,7 +55,7 @@ export default function ResultPage() {
               className="rounded-xl border border-chalk/10 bg-pitch-dark/30 px-4 py-3"
             >
               <div className="mb-2 flex items-center justify-between text-[10px] text-chalk/40">
-                <span>{m.stage.replace(/_/g, ' ')}{m.group ? ` · Group ${m.group.slice(-1)}` : ''}</span>
+                <span>{(m.stage || '').replace(/_/g, ' ')}{m.group ? ` · Group ${m.group.slice(-1)}` : ''}</span>
                 <span>{date}</span>
               </div>
               <div className="grid grid-cols-3 items-center gap-2">

@@ -5,12 +5,17 @@ export function isLive(m: Match): boolean {
   return m.status === 'IN_PLAY' || m.status === 'PAUSED';
 }
 
-export function isUpcoming(m: Match): boolean {
-  return m.status === 'SCHEDULED' || m.status === 'TIMED';
-}
-
 export function isFinished(m: Match): boolean {
   return m.status === 'FINISHED' || m.status === 'AWARDED';
+}
+
+export function isUpcoming(m: Match): boolean {
+  // Anything that isn't live and isn't finished is treated as "upcoming" - this is
+  // intentionally permissive. The alternative (only recognizing 'SCHEDULED'/'TIMED')
+  // risks silently hiding fixtures if the API ever uses a status value we didn't
+  // anticipate (e.g. a placeholder status for Round of 32 slots not yet confirmed).
+  // Better to show a fixture under the wrong-looking label than to drop it entirely.
+  return !isLive(m) && !isFinished(m);
 }
 
 export function sortByDateAsc(matches: Match[]): Match[] {
@@ -71,4 +76,15 @@ export function countdownParts(utcDate: string, now: number): { d: number; h: nu
   diff -= m * 60_000;
   const s = Math.floor(diff / 1000);
   return { d, h, m, s, passed: false };
+}
+
+// Fallback display when the API hasn't given us an exact minute yet (e.g. right at
+// kickoff, or a detail-call hiccup). Rough estimate only - doesn't account for
+// stoppage time or halftime breaks, so it's clearly different visual treatment from
+// a real, API-confirmed minute.
+export function estimatedElapsedMinutes(utcDate: string, now: number): number {
+  const kickoff = new Date(utcDate).getTime();
+  const elapsedMs = now - kickoff;
+  if (elapsedMs < 0) return 0;
+  return Math.min(Math.floor(elapsedMs / 60_000), 120);
 }

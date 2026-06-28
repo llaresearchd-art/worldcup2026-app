@@ -106,6 +106,13 @@ export async function fetchAllMatches(): Promise<Match[]> {
   return data.matches;
 }
 
+export async function fetchMatchDetail(id: number): Promise<Match> {
+  // The list endpoint omits "deep" fields like live minute to save bandwidth
+  // (confirmed in football-data.org's v4 docs). The single-match endpoint includes
+  // them, so we call this only for matches that are currently live.
+  return apiFetch<Match>(`/matches/${id}`);
+}
+
 export async function fetchTopScorers(): Promise<ScorerEntry[]> {
   const data = await apiFetch<{ scorers: ScorerEntry[] }>(
     `/competitions/${COMPETITION}/scorers?limit=20`

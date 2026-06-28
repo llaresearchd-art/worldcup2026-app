@@ -15,11 +15,20 @@
 // to the upstream rate limit even with a big group watching together.
 
 import { getRedis } from './redis';
-import { fetchAllMatches, fetchTeams, fetchTopScorers, Match, TeamFull, ScorerEntry } from './football-api';
+import {
+  fetchAllMatches,
+  fetchTeams,
+  fetchTopScorers,
+  fetchMatchDetail,
+  Match,
+  TeamFull,
+  ScorerEntry,
+} from './football-api';
 
 const kv = getRedis();
 
-export const REFRESH_INTERVAL_MS = 25_000; // how often we hit football-data.org
+export const REFRESH_INTERVAL_MS = 25_000; // how often we hit football-data.org for the match list
+export const LIVE_DETAIL_INTERVAL_MS = 25_000; // how often we hit per-match detail for live games only
 export const FRONTEND_POLL_MS = 20_000; // how often the browser polls OUR cache
 
 const MATCHES_KEY = 'wc26:matches';
@@ -28,6 +37,8 @@ const TEAMS_KEY = 'wc26:teams';
 const TEAMS_TS_KEY = 'wc26:teams:ts';
 const SCORERS_KEY = 'wc26:scorers';
 const SCORERS_TS_KEY = 'wc26:scorers:ts';
+const LIVE_DETAIL_PREFIX = 'wc26:livedetail:';
+const LIVE_DETAIL_TS_PREFIX = 'wc26:livedetail:ts:';
 
 async function getCached<T>(
   dataKey: string,
@@ -61,10 +72,6 @@ async function getCached<T>(
   }
 }
 
-export function getMatches() {
-  return getCached<Match[]>(MATCHES_KEY, MATCHES_TS_KEY, REFRESH_INTERVAL_MS, fetchAllMatches);
-}
-
 export function getTeams() {
   // Squads/teams change rarely - cache much longer (1 hour) to save requests.
   return getCached<TeamFull[]>(TEAMS_KEY, TEAMS_TS_KEY, 60 * 60_000, fetchTeams);
@@ -72,4 +79,46 @@ export function getTeams() {
 
 export function getTopScorers() {
   return getCached<ScorerEntry[]>(SCORERS_KEY, SCORERS_TS_KEY, REFRESH_INTERVAL_MS, fetchTopScorers);
+}
+
+// The match LIST endpoint omits "deep" fields (like live minute) to save bandwidth -
+// confirmed in football-data.org's own v4 docs. Only the single-match detail endpoint
+// includes them. So for matches that are currently live, we fetch their detail
+// separately (each with its own short cache) and merge the minute back in.
+// This keeps total request volume low: most of the time zero or one match is live,
+// so this adds at most a couple of extra calls per refresh cycle - well inside the
+// free 10 req/min limit.
+async function enrichLiveMinutes(matches: Match[]): Promise<Match[]> {
+  const liveMatches = matches.filter((m) => m.status === 'IN_PLAY' || m.status === 'PAUSED');
+  if (liveMatches.length === 0) return matches;
+
+  const detailResults = await Promise.all(
+    liveMatches.map(async (m) => {
+      const dataKey = `${LIVE_DETAIL_PREFIX}${m.id}`;
+      const tsKey = `${LIVE_DETAIL_TS_PREFIX}${m.id}`;
+      try {
+        const { data } = await getCached<Match>(dataKey, tsKey, LIVE_DETAIL_INTERVAL_MS, () =>
+          fetchMatchDetail(m.id)
+        );
+        return data;
+      } catch {
+        // If the detail call fails for this one match (rate limit, etc), just keep
+        // showing the list version without a minute, rather than breaking the page.
+        return null;
+      }
+    })
+  );
+
+  const detailById = new Map(detailResults.filter((d): d is Match => d !== null).map((d) => [d.id, d]));
+
+  return matches.map((m) => {
+    const detail = detailById.get(m.id);
+    return detail ? { ...m, minute: detail.minute, goals: detail.goals ?? m.goals } : m;
+  });
+}
+
+export async function getMatches() {
+  const result = await getCached<Match[]>(MATCHES_KEY, MATCHES_TS_KEY, REFRESH_INTERVAL_MS, fetchAllMatches);
+  const enriched = await enrichLiveMinutes(result.data);
+  return { ...result, data: enriched };
 }

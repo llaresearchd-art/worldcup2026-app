@@ -1,6 +1,8 @@
+'use client';
 // components/LiveScoreCard.tsx
+import { useEffect, useState } from 'react';
 import { Match } from '@/lib/football-api';
-import { teamDisplayName } from '@/lib/match-utils';
+import { teamDisplayName, estimatedElapsedMinutes } from '@/lib/match-utils';
 
 function TeamCrest({ team }: { team: { crest: string | null; name: string } | null | undefined }) {
   if (!team) {
@@ -18,9 +20,19 @@ function TeamCrest({ team }: { team: { crest: string | null; name: string } | nu
 }
 
 export default function LiveScoreCard({ match }: { match: Match }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const scorers = match.goals ?? [];
   const homeScorers = scorers.filter((g) => match.homeTeam && g.team.id === match.homeTeam.id);
   const awayScorers = scorers.filter((g) => match.awayTeam && g.team.id === match.awayTeam.id);
+
+  const hasRealMinute = typeof match.minute === 'number' && match.minute > 0;
+  const estimate = !hasRealMinute && match.status === 'IN_PLAY' ? estimatedElapsedMinutes(match.utcDate, now) : null;
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-floodlight/30 bg-gradient-to-b from-pitch-mid to-pitch-dark p-4 shadow-lg shadow-black/20 animate-slideUp">
@@ -31,9 +43,12 @@ export default function LiveScoreCard({ match }: { match: Match }) {
           <span className="text-[11px] font-bold uppercase tracking-widest text-goal">
             {match.status === 'PAUSED' ? 'Half-time' : 'Live'}
           </span>
-          {match.minute ? (
+          {hasRealMinute && (
             <span className="ml-1 font-score text-[11px] text-chalk/70">{match.minute}&apos;</span>
-          ) : null}
+          )}
+          {!hasRealMinute && estimate !== null && (
+            <span className="ml-1 font-score text-[11px] text-chalk/40">~{estimate}&apos;</span>
+          )}
         </div>
         {match.venue && (
           <span className="truncate text-[11px] text-chalk/50">{match.venue}</span>
@@ -78,6 +93,19 @@ export default function LiveScoreCard({ match }: { match: Match }) {
           </ul>
         </div>
       )}
+
+      <a
+        href={`https://www.google.com/search?q=${encodeURIComponent(
+          `watch ${teamDisplayName(match.homeTeam ?? { name: 'TBD', shortName: null })} vs ${teamDisplayName(
+            match.awayTeam ?? { name: 'TBD', shortName: null }
+          )} live stream`
+        )}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 block rounded-lg border border-chalk/15 px-3 py-2 text-center text-[11px] font-medium text-chalk/70 transition-colors hover:border-floodlight/40 hover:text-chalk"
+      >
+        📺 Find where to watch this match
+      </a>
     </div>
   );
 }
