@@ -77,6 +77,21 @@ function FixtureRow({ m }: { m: Match }) {
   );
 }
 
+function dateGroupLabel(utcDate: string, now: Date): string {
+  try {
+    const matchDate = new Date(utcDate);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfMatchDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
+    const diffDays = Math.round((startOfMatchDay.getTime() - startOfToday.getTime()) / 86_400_000);
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    return matchDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  } catch {
+    return 'Upcoming';
+  }
+}
+
 export default function SchedulePage() {
   const { data, loading, error } = usePolling<MatchesResponse>('/api/matches', 30_000);
 
@@ -88,11 +103,24 @@ export default function SchedulePage() {
     pageError = 'There was a problem reading the schedule data. Pull to refresh, or check back shortly.';
   }
 
+  const now = new Date();
+  const grouped: { label: string; fixtures: Match[] }[] = [];
+  for (const m of upcoming) {
+    if (!m || m.id == null || !m.utcDate) continue;
+    const label = dateGroupLabel(m.utcDate, now);
+    const lastGroup = grouped[grouped.length - 1];
+    if (lastGroup && lastGroup.label === label) {
+      lastGroup.fixtures.push(m);
+    } else {
+      grouped.push({ label, fixtures: [m] });
+    }
+  }
+
   return (
     <main>
       <PageHeader title="Schedule" subtitle={`${upcoming.length} matches remaining`} />
 
-      <div className="space-y-2 px-4">
+      <div className="space-y-4 px-4">
         {loading && !data && (
           <p className="py-8 text-center text-sm text-chalk/50">Loading schedule…</p>
         )}
@@ -105,23 +133,30 @@ export default function SchedulePage() {
         )}
 
         {!pageError &&
-          upcoming
-            .filter((m) => m && m.id != null && m.utcDate)
-            .map((m) => (
-              <div key={m.id}>
-                {(() => {
-                  try {
-                    return <FixtureRow m={m} />;
-                  } catch {
-                    return (
-                      <div className="rounded-xl border border-chalk/10 bg-pitch-dark/20 px-4 py-3 text-center text-xs text-chalk/30">
-                        A fixture here couldn&apos;t be displayed.
-                      </div>
-                    );
-                  }
-                })()}
+          grouped.map((group) => (
+            <div key={group.label}>
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-floodlight">
+                {group.label}
+              </h2>
+              <div className="space-y-2">
+                {group.fixtures.map((m) => (
+                  <div key={m.id}>
+                    {(() => {
+                      try {
+                        return <FixtureRow m={m} />;
+                      } catch {
+                        return (
+                          <div className="rounded-xl border border-chalk/10 bg-pitch-dark/20 px-4 py-3 text-center text-xs text-chalk/30">
+                            A fixture here couldn&apos;t be displayed.
+                          </div>
+                        );
+                      }
+                    })()}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+          ))}
       </div>
 
       <Footer />

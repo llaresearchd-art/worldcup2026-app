@@ -73,6 +73,15 @@ export default function MyTeamsPage() {
 
         {editing && (
           <div className="mb-6">
+            {favoriteIds.length === 0 && (
+              <div className="mb-4 rounded-xl border border-floodlight/30 bg-floodlight/10 px-4 py-3">
+                <p className="text-sm font-medium text-chalk">Pick your favorite teams</p>
+                <p className="mt-0.5 text-xs text-chalk/60">
+                  Choose up to {MAX_FAVORITES} — this page will then show just their results and
+                  upcoming matches, so you don&apos;t have to dig through all 104.
+                </p>
+              </div>
+            )}
             <p className="mb-2 text-[11px] text-chalk/50">
               {favoriteIds.length}/{MAX_FAVORITES} selected
             </p>
@@ -120,7 +129,7 @@ export default function MyTeamsPage() {
         {!editing &&
           favoriteTeams.map((team) => {
             const teamMatches = matches.filter(
-              (m) => m.homeTeam.id === team.id || m.awayTeam.id === team.id
+              (m) => (m.homeTeam && m.homeTeam.id === team.id) || (m.awayTeam && m.awayTeam.id === team.id)
             );
             const played = teamMatches.filter(isFinished);
             const upcoming = teamMatches.filter(isUpcoming);
@@ -138,7 +147,7 @@ export default function MyTeamsPage() {
                 {played.length > 0 && (
                   <div className="mb-2 space-y-1.5">
                     {played.map((m) => {
-                      const isHome = m.homeTeam.id === team.id;
+                      const isHome = m.homeTeam && m.homeTeam.id === team.id;
                       const opponent = isHome ? m.awayTeam : m.homeTeam;
                       const myScore = isHome ? m.score.fullTime.home : m.score.fullTime.away;
                       const oppScore = isHome ? m.score.fullTime.away : m.score.fullTime.home;
@@ -160,7 +169,7 @@ export default function MyTeamsPage() {
                 {upcoming.length > 0 && (
                   <div className="space-y-1.5">
                     {upcoming.map((m) => {
-                      const isHome = m.homeTeam.id === team.id;
+                      const isHome = m.homeTeam && m.homeTeam.id === team.id;
                       const opponent = isHome ? m.awayTeam : m.homeTeam;
                       const { date, time } = formatKickoff(m.utcDate);
                       return (

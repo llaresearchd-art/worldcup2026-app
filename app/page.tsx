@@ -11,9 +11,9 @@ import {
 } from '@/lib/match-utils';
 import LiveScoreCard from '@/components/LiveScoreCard';
 import UpNextCard from '@/components/UpNextCard';
-import TopLinks from '@/components/TopLinks';
 import Footer from '@/components/Footer';
 import NotificationOptIn from '@/components/NotificationOptIn';
+import FirstVisitTip from '@/components/FirstVisitTip';
 import { useEffect, useState, useCallback } from 'react';
 
 interface MatchesResponse {
@@ -60,13 +60,19 @@ export default function HomePage() {
         <h1 className="font-display text-4xl uppercase tracking-wide text-chalk">Matchday Hub</h1>
       </header>
 
-      <TopLinks />
+      <FirstVisitTip />
 
       {/* Match counter */}
       <div className="mx-4 mb-4 flex items-center justify-between rounded-xl border border-chalk/10 bg-pitch-dark/40 px-4 py-3">
         <span className="text-xs text-chalk/60">Matches played</span>
         <span className="font-score text-lg font-bold text-chalk">
-          {played} <span className="text-chalk/40">/ {total || 104}</span>
+          {data ? (
+            <>
+              {played} <span className="text-chalk/40">/ {total || 104}</span>
+            </>
+          ) : (
+            <span className="text-chalk/30">…</span>
+          )}
         </span>
       </div>
 
@@ -111,25 +117,24 @@ export default function HomePage() {
 
         <NotificationOptIn />
 
-        {/* Quick links grid */}
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          {[
-            { href: '/result', label: 'Results' },
-            { href: '/squad', label: 'Squads' },
-            { href: '/road-to-final', label: 'Road to Final' },
-            { href: '/top-scorers', label: 'Top Scorers' },
-            { href: '/schedule', label: 'Schedule' },
-            { href: '/prediction', label: 'My Prediction' },
-            { href: '/my-teams', label: 'My Teams' },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-xl border border-chalk/10 bg-pitch-dark/30 px-4 py-4 text-sm font-medium text-chalk/80 transition-colors hover:border-floodlight/40 hover:text-chalk"
-            >
-              {item.label}
-            </Link>
-          ))}
+        {/* More pages not already in the bottom tab bar */}
+        <div className="pt-2">
+          <p className="mb-2 text-[11px] uppercase tracking-widest text-chalk/40">More</p>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { href: '/squad', label: 'Squads' },
+              { href: '/top-scorers', label: 'Top Scorers' },
+              { href: '/prediction', label: 'My Prediction' },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-xl border border-chalk/10 bg-pitch-dark/30 px-3 py-4 text-center text-xs font-medium text-chalk/80 transition-colors hover:border-floodlight/40 hover:text-chalk"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 

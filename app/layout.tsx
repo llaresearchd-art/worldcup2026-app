@@ -8,8 +8,19 @@ const body = Inter({ subsets: ['latin'], variable: '--font-body' });
 const score = JetBrains_Mono({ subsets: ['latin'], variable: '--font-score' });
 
 export const metadata: Metadata = {
-  title: "Ridwan's World Cup 2026",
+  title: 'My World Cup 2026',
   description: 'A personal FIFA World Cup 2026 companion — live scores, predictions, and your favorite teams.',
+  manifest: '/manifest.json',
+  icons: {
+    icon: [{ url: '/favicon-32.png', sizes: '32x32', type: 'image/png' }],
+    shortcut: '/favicon.ico',
+    apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'My World Cup 2026',
+  },
 };
 
 export const viewport: Viewport = {

@@ -1,0 +1,23 @@
+{
+  "name": "My World Cup 2026",
+  "short_name": "World Cup 2026",
+  "description": "A personal FIFA World Cup 2026 companion — live scores, predictions, and your favorite teams.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#11301F",
+  "theme_color": "#11301F",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
