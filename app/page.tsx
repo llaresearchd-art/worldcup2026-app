@@ -15,6 +15,7 @@ import Footer from '@/components/Footer';
 import NotificationOptIn from '@/components/NotificationOptIn';
 import FirstVisitTip from '@/components/FirstVisitTip';
 import JoinLeaderboard from '@/components/JoinLeaderboard';
+import PredictionPopup from '@/components/PredictionPopup';
 import { useEffect, useState, useCallback } from 'react';
 
 interface MatchesResponse {
@@ -53,6 +54,14 @@ export default function HomePage() {
   const upNext = nextMatch(matches);
   const played = matchesPlayedCount(matches);
   const total = totalMatchesCount(matches);
+
+  const upNextPrediction = upNext ? predictions[String(upNext.id)] : undefined;
+  const minutesToUpNext = upNext ? (new Date(upNext.utcDate).getTime() - Date.now()) / 60_000 : Infinity;
+  // Mirrors PredictionPopup's own visibility logic, so JoinLeaderboard knows when to
+  // step aside rather than overlap it. Doesn't need to be perfectly in sync second-
+  // by-second - both popups dismiss to a small inline element either way, so a brief
+  // overlap window is harmless even if these drift slightly.
+  const predictionPopupLikelyShowing = Boolean(upNext) && !upNextPrediction && minutesToUpNext > 0 && minutesToUpNext <= 30;
 
   return (
     <main>
@@ -116,7 +125,13 @@ export default function HomePage() {
           />
         )}
 
-        <JoinLeaderboard />
+        <PredictionPopup
+          match={upNext}
+          prediction={upNext ? predictions[String(upNext.id)] : undefined}
+          onPredict={(pick) => upNext && handlePredict(upNext.id, pick)}
+        />
+
+        <JoinLeaderboard suppress={predictionPopupLikelyShowing} />
 
         <NotificationOptIn />
 

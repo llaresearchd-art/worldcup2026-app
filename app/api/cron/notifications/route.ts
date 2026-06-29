@@ -126,11 +126,20 @@ export async function GET(req: Request) {
       const minutesToKickoff = (kickoff - now) / 60_000;
 
       // --- Reminders before kickoff (24h, 3h, 30min) ---
-      const reminderWindows: { kind: string; minutes: number; label: string }[] = [
-        { kind: 'reminder_24h', minutes: 24 * 60, label: 'tomorrow' },
-        { kind: 'reminder_3h', minutes: 3 * 60, label: 'in 3 hours' },
-        { kind: 'reminder_30m', minutes: 30, label: 'in 30 minutes' },
-      ];
+      // Hard guard: never send a "match starting" reminder for a match that has
+      // already kicked off or finished, no matter what the time-window math says.
+      // This protects against the cron job missing a run for an extended stretch
+      // (scheduler downtime, a paused job, etc) and then catching up later with
+      // stale timing math that would otherwise still satisfy a window check.
+      const alreadyUnderway = m.status !== 'SCHEDULED' && m.status !== 'TIMED';
+
+      const reminderWindows: { kind: string; minutes: number; label: string }[] = alreadyUnderway
+        ? []
+        : [
+            { kind: 'reminder_24h', minutes: 24 * 60, label: 'tomorrow' },
+            { kind: 'reminder_3h', minutes: 3 * 60, label: 'in 3 hours' },
+            { kind: 'reminder_30m', minutes: 30, label: 'in 30 minutes' },
+          ];
 
       for (const window of reminderWindows) {
         if (sentThisRun >= MAX_NOTIFICATIONS_PER_RUN) break;
@@ -140,21 +149,45 @@ export async function GET(req: Request) {
         // for a while and catches up later.
         if (minutesToKickoff <= window.minutes && minutesToKickoff > window.minutes - 15) {
           if (!(await alreadySent(m.id, window.kind))) {
+            const isPredictionWindow = window.kind === 'reminder_30m';
+            const homeLabel = teamDisplayName(m.homeTeam);
+            const awayLabel = teamDisplayName(m.awayTeam);
+
             await broadcastNotification({
-              title: 'Upcoming Match',
-              body: `${matchupLabel(m)} kicks off ${window.label}${m.venue ? ` at ${m.venue}` : ''}.`,
+              title: isPredictionWindow ? 'Who do you think wins?' : 'Upcoming Match',
+              body: `${matchupLabel(m)} kicks off ${window.label}${m.venue ? ` at ${m.venue}` : ''}.${
+                isPredictionWindow ? ' Tap a team to predict, or open the app for all options.' : ''
+              }`,
               url: '/',
               tag: `match-${m.id}-${window.kind}`,
+              matchId: isPredictionWindow ? String(m.id) : undefined,
+              // Browsers commonly cap notifications at 2 action buttons, so only the
+              // 2 teams get a direct one-tap pick here - draw is always available by
+              // opening the app, alongside the team buttons too, so no option is
+              // ever truly unreachable.
+              actions: isPredictionWindow
+                ? [
+                    { action: 'predict:HOME', title: homeLabel.slice(0, 18) },
+                    { action: 'predict:AWAY', title: awayLabel.slice(0, 18) },
+                  ]
+                : undefined,
             });
             await markSent(m.id, window.kind);
-            results.push(`Sent ${window.kind} for match ${m.id}`);
+            results.push(
+              `Sent ${window.kind} for match ${m.id} (${matchupLabel(m)}) - kickoff=${m.utcDate}, status=${m.status}, minutesToKickoff=${minutesToKickoff.toFixed(1)}`
+            );
             sentThisRun += 1;
           }
         }
       }
 
       // --- 5-minute warning ---
-      if (sentThisRun < MAX_NOTIFICATIONS_PER_RUN && minutesToKickoff <= 5 && minutesToKickoff > -10) {
+      if (
+        !alreadyUnderway &&
+        sentThisRun < MAX_NOTIFICATIONS_PER_RUN &&
+        minutesToKickoff <= 5 &&
+        minutesToKickoff > -10
+      ) {
         if (!(await alreadySent(m.id, 'reminder_5m'))) {
           await broadcastNotification({
             title: 'Kicking off soon!',

@@ -77,16 +77,37 @@ function FixtureRow({ m }: { m: Match }) {
   );
 }
 
+const DISPLAY_TIMEZONE = 'Asia/Dhaka';
+
+function dhakaDateParts(d: Date): { y: number; m: number; day: number } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: DISPLAY_TIMEZONE,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(d);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  return { y: get('year'), m: get('month'), day: get('day') };
+}
+
 function dateGroupLabel(utcDate: string, now: Date): string {
   try {
     const matchDate = new Date(utcDate);
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startOfMatchDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
-    const diffDays = Math.round((startOfMatchDay.getTime() - startOfToday.getTime()) / 86_400_000);
+    const today = dhakaDateParts(now);
+    const matchDay = dhakaDateParts(matchDate);
+
+    const startOfToday = Date.UTC(today.y, today.m - 1, today.day);
+    const startOfMatchDay = Date.UTC(matchDay.y, matchDay.m - 1, matchDay.day);
+    const diffDays = Math.round((startOfMatchDay - startOfToday) / 86_400_000);
 
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Tomorrow';
-    return matchDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    return matchDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      timeZone: DISPLAY_TIMEZONE,
+    });
   } catch {
     return 'Upcoming';
   }

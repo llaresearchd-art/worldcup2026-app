@@ -9,7 +9,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-export default function JoinLeaderboard() {
+export default function JoinLeaderboard({ suppress = false }: { suppress?: boolean }) {
   const [name, setName] = useState<string | null | undefined>(undefined); // undefined = loading
   const [input, setInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -59,7 +59,7 @@ export default function JoinLeaderboard() {
     );
   }
 
-  if (dismissedThisVisit) {
+  if (dismissedThisVisit || suppress) {
     return (
       <button
         onClick={() => setDismissedThisVisit(false)}

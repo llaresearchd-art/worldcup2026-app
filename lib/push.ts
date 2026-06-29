@@ -53,11 +53,18 @@ export async function getAllSubscriptions(): Promise<{ visitorId: string; sub: P
   return results.filter((r): r is { visitorId: string; sub: PushSubscriptionRecord } => r !== null);
 }
 
+export interface NotificationAction {
+  action: string;
+  title: string;
+}
+
 export interface NotificationPayload {
   title: string;
   body: string;
   url?: string;
   tag?: string;
+  matchId?: string;
+  actions?: NotificationAction[];
 }
 
 // Sends to every subscribed visitor. If a subscription has expired or been revoked

@@ -56,11 +56,28 @@ export function teamDisplayName(team: { shortName: string | null; name: string }
   return team.shortName || team.name;
 }
 
+// Fixed to Bangladesh time, 12-hour format with AM/PM, regardless of the visitor's
+// device settings - this was previously using toLocaleTimeString(undefined, ...),
+// which defers to the device's locale and silently produced 24-hour time on many
+// phones even with hour:'numeric' set. Explicit timeZone + hour12 removes that
+// ambiguity entirely.
+const DISPLAY_TIMEZONE = 'Asia/Dhaka';
+
 export function formatKickoff(utcDate: string): { date: string; time: string } {
   const d = new Date(utcDate);
   return {
-    date: d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }),
-    time: d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }),
+    date: d.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      timeZone: DISPLAY_TIMEZONE,
+    }),
+    time: d.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: DISPLAY_TIMEZONE,
+    }),
   };
 }
 
