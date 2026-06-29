@@ -14,6 +14,7 @@ import UpNextCard from '@/components/UpNextCard';
 import Footer from '@/components/Footer';
 import NotificationOptIn from '@/components/NotificationOptIn';
 import FirstVisitTip from '@/components/FirstVisitTip';
+import JoinLeaderboard from '@/components/JoinLeaderboard';
 import { useEffect, useState, useCallback } from 'react';
 
 interface MatchesResponse {
@@ -115,16 +116,19 @@ export default function HomePage() {
           />
         )}
 
+        <JoinLeaderboard />
+
         <NotificationOptIn />
 
         {/* More pages not already in the bottom tab bar */}
         <div className="pt-2">
           <p className="mb-2 text-[11px] uppercase tracking-widest text-chalk/40">More</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {[
               { href: '/squad', label: 'Squads' },
               { href: '/top-scorers', label: 'Top Scorers' },
               { href: '/prediction', label: 'My Prediction' },
+              { href: '/leaderboard', label: 'Leaderboard' },
             ].map((item) => (
               <Link
                 key={item.href}
