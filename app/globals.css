@@ -7,26 +7,123 @@ html {
 }
 
 body {
-  background-color: #11301F;
+  background-color: #0C2218;
+  background-image: radial-gradient(ellipse 120% 60% at 50% 0%, #2D6A4F 0%, #1B4332 40%, #0C2218 100%);
+  background-attachment: fixed;
   color: #F8F7F2;
+  min-height: 100vh;
 }
 
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-none {
-  scrollbar-width: none;
+/* ─── Tap feedback ─────────────────────────────────────────────── */
+/* Every interactive element gets a physical press response */
+button, a {
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* ─── Scrollbar ────────────────────────────────────────────────── */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
+
+/* ─── Reduced motion ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }
 
+/* ─── Focus ────────────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid #F4A300;
   outline-offset: 2px;
+}
+
+/* ─── Page transition ──────────────────────────────────────────── */
+/* Applied to main content areas for that native-app feel */
+.page-enter {
+  animation: pageEnter 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Number pop ───────────────────────────────────────────────── */
+/* Applied to score numbers when they update */
+.score-pop {
+  animation: scorePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scorePop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.35); color: #F4A300; }
+  100% { transform: scale(1); }
+}
+
+/* ─── Live glow ────────────────────────────────────────────────── */
+.live-glow {
+  box-shadow: 0 0 0 0 rgba(214, 40, 40, 0.7);
+  animation: liveGlow 2s ease-out infinite;
+}
+
+@keyframes liveGlow {
+  0%   { box-shadow: 0 0 0 0 rgba(214, 40, 40, 0.7); }
+  70%  { box-shadow: 0 0 0 8px rgba(214, 40, 40, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(214, 40, 40, 0); }
+}
+
+/* ─── Card lift ────────────────────────────────────────────────── */
+.card-interactive {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-interactive:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* ─── Spotlight beam (bottom nav signature) ─────────────────────── */
+.nav-spotlight {
+  position: relative;
+}
+.nav-spotlight::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 36px;
+  background: radial-gradient(ellipse at bottom, rgba(244,163,0,0.25) 0%, transparent 70%);
+  pointer-events: none;
+  border-radius: 50%;
+  transition: opacity 0.2s ease;
+}
+
+/* ─── Shimmer loading ──────────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ─── Gradient text (for headings) ─────────────────────────────── */
+.text-gradient {
+  background: linear-gradient(135deg, #F8F7F2 0%, #F4A300 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Floodlight card ───────────────────────────────────────────── */
+/* A card that looks lit from above, like a stadium floodlight */
+.card-floodlit {
+  background: linear-gradient(160deg, #2D6A4F 0%, #1B4332 60%, #0C2218 100%);
+  border: 1px solid rgba(244, 163, 0, 0.2);
 }
