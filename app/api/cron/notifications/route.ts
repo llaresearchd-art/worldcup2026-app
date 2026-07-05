@@ -201,32 +201,52 @@ export async function GET(req: Request) {
         }
       }
 
-      // --- Goal notifications (live matches only) ---
+// --- Goal notifications (live matches only) ---
+      // We detect goals by tracking score changes rather than relying on the goals
+      // array, because football-data.org's free tier only reliably populates the
+      // goals array AFTER a match finishes, not live during play. Score changes
+      // are always reflected live. We still use the goals array for scorer names
+      // when available, falling back to "a goal was scored" when it isn't.
       if (sentThisRun < MAX_NOTIFICATIONS_PER_RUN && (m.status === 'IN_PLAY' || m.status === 'PAUSED')) {
-        const goals = m.goals ?? [];
+        const currentScore = (m.score?.fullTime?.home ?? 0) + (m.score?.fullTime?.away ?? 0);
         const previousCount = await trackedGoalCount(m.id);
-        if (goals.length > previousCount) {
-          const newGoals = goals.slice(previousCount);
-          for (const g of newGoals) {
-            if (sentThisRun >= MAX_NOTIFICATIONS_PER_RUN) break;
-            const scoringTeam =
-              m.homeTeam && g.team.id === m.homeTeam.id
-                ? m.homeTeam
-                : m.awayTeam && g.team.id === m.awayTeam.id
-                ? m.awayTeam
-                : null;
+
+        if (currentScore > previousCount) {
+          const newGoalCount = currentScore - previousCount;
+
+          // Try to get scorer name from goals array if available
+          const goals = m.goals ?? [];
+          const latestGoal = goals.length > 0 ? goals[goals.length - 1] : null;
+          const scoringTeam = latestGoal
+            ? (m.homeTeam && latestGoal.team.id === m.homeTeam.id ? m.homeTeam
+               : m.awayTeam && latestGoal.team.id === m.awayTeam.id ? m.awayTeam
+               : null)
+            : null;
+
+          // Build the notification body
+          const homeScore = m.score?.fullTime?.home ?? 0;
+          const awayScore = m.score?.fullTime?.away ?? 0;
+          const scoreStr = `${homeScore}-${awayScore}`;
+
+          let body: string;
+          if (latestGoal?.scorer?.name && scoringTeam) {
+            body = `${latestGoal.scorer.name} scores for ${teamDisplayName(scoringTeam)}! ${matchupLabel(m)} now ${scoreStr}${latestGoal.minute ? ` (${latestGoal.minute}')` : ''}`;
+          } else {
+            body = `GOAL! ${matchupLabel(m)} now ${scoreStr}`;
+          }
+
+          for (let i = 0; i < Math.min(newGoalCount, MAX_NOTIFICATIONS_PER_RUN - sentThisRun); i++) {
             await broadcastNotification({
-              title: '⚽ Goal!',
-              body: `${g.scorer.name} scores for ${scoringTeam ? teamDisplayName(scoringTeam) : 'a team'} (${
-                g.minute ?? '?'
-              }') — ${matchupLabel(m)}`,
+              title: '⚽ GOAL!',
+              body,
               url: '/',
-              tag: `match-${m.id}-goal-${previousCount + newGoals.indexOf(g) + 1}`,
+              tag: `match-${m.id}-goal-score-${currentScore}`,
             });
             sentThisRun += 1;
           }
-          await setTrackedGoalCount(m.id, goals.length);
-          results.push(`Sent ${newGoals.length} goal notification(s) for match ${m.id}`);
+
+          await setTrackedGoalCount(m.id, currentScore);
+          results.push(`Sent goal notification(s) for match ${m.id} - score now ${scoreStr}`);
         }
       }
 

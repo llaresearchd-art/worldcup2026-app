@@ -12,10 +12,10 @@ import {
 import LiveScoreCard from '@/components/LiveScoreCard';
 import UpNextCard from '@/components/UpNextCard';
 import Footer from '@/components/Footer';
-import NotificationOptIn from '@/components/NotificationOptIn';
 import FirstVisitTip from '@/components/FirstVisitTip';
 import JoinLeaderboard from '@/components/JoinLeaderboard';
 import PredictionPopup from '@/components/PredictionPopup';
+import NotificationOptIn from '@/components/NotificationOptIn';
 import { useEffect, useState, useCallback } from 'react';
 
 interface MatchesResponse {
@@ -28,10 +28,10 @@ interface PredictResponse {
 }
 
 const MORE_LINKS = [
-  { href: '/squad',       label: 'Squads',       icon: '🌍' },
-  { href: '/top-scorers', label: 'Top Scorers',  icon: '👟' },
-  { href: '/prediction',  label: 'My Prediction',icon: '🎯' },
-  { href: '/result',      label: 'Results',      icon: '🏁' },
+  { href: '/squad',       label: 'Squads',        icon: '🌍' },
+  { href: '/top-scorers', label: 'Top Scorers',   icon: '👟' },
+  { href: '/prediction',  label: 'My Prediction', icon: '🎯' },
+  { href: '/result',      label: 'Results',       icon: '🏁' },
 ];
 
 export default function HomePage() {
@@ -169,7 +169,6 @@ export default function HomePage() {
         />
 
         <JoinLeaderboard suppress={predictionPopupLikelyShowing} />
-
         <NotificationOptIn />
 
         {/* ── More section ──────────────────────────────────────── */}
