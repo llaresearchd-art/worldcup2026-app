@@ -145,13 +145,62 @@ export default function HomePage() {
               <LiveScoreCard key={m.id} match={m} />
             ))}
           </div>
-        ) : data && (
-          <div className="rounded-2xl border border-chalk/8 bg-pitch-mid/10 p-5 text-center animate-slideUp">
-            <p className="text-2xl mb-1">🌙</p>
-            <p className="text-sm font-medium text-chalk/60">No match live right now</p>
-            <p className="text-xs text-chalk/30 mt-0.5">Check back when the next match kicks off</p>
-          </div>
-        )}
+        ) : data && (() => {
+          // Check if any "upcoming" match has actually already kicked off based on
+          // time, but our data source hasn't updated its status yet (free tier lag).
+          // Show a "match in progress" placeholder rather than "no match live".
+          const now = Date.now();
+          const likelyLive = (data.matches ?? []).filter(m => {
+            if (!m.utcDate) return false;
+            const kickoff = new Date(m.utcDate).getTime();
+            const elapsed = (now - kickoff) / 60_000; // minutes since kickoff
+            return elapsed > 0 && elapsed < 115 && (m.status === 'TIMED' || m.status === 'SCHEDULED');
+          });
+
+          if (likelyLive.length > 0) {
+            return (
+              <div className="space-y-3">
+                {likelyLive.map(m => (
+                  <div key={m.id} className="relative overflow-hidden rounded-2xl border border-floodlight/20 bg-gradient-to-b from-pitch-mid to-pitch-dark p-4 shadow-card animate-slideUp">
+                    <div className="mb-3 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-floodlight animate-pulseLive" />
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-floodlight">
+                        Match in Progress
+                      </span>
+                      <span className="ml-1 text-[11px] text-chalk/40">· Live data updating…</span>
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-2">
+                      <div className="flex flex-col items-center gap-1.5 text-center">
+                        {m.homeTeam?.crest && <img src={m.homeTeam.crest} alt={m.homeTeam.name} className="h-9 w-9 object-contain" />}
+                        <span className="text-xs font-semibold text-chalk">{m.homeTeam?.shortName || m.homeTeam?.name || 'TBD'}</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 font-score text-3xl font-bold text-chalk/40 tabular-nums">
+                        <span>?</span>
+                        <span className="text-floodlight/40">–</span>
+                        <span>?</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1.5 text-center">
+                        {m.awayTeam?.crest && <img src={m.awayTeam.crest} alt={m.awayTeam.name} className="h-9 w-9 object-contain" />}
+                        <span className="text-xs font-semibold text-chalk">{m.awayTeam?.shortName || m.awayTeam?.name || 'TBD'}</span>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-center text-[11px] text-chalk/30">
+                      Score will appear once our data source updates · refreshing every 25s
+                    </p>
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
+          return (
+            <div className="rounded-2xl border border-chalk/8 bg-pitch-mid/10 p-5 text-center animate-slideUp">
+              <p className="text-2xl mb-1">🌙</p>
+              <p className="text-sm font-medium text-chalk/60">No match live right now</p>
+              <p className="text-xs text-chalk/30 mt-0.5">Check back when the next match kicks off</p>
+            </div>
+          );
+        })()}
 
         {/* ── Up Next ───────────────────────────────────────────── */}
         {upNext && (

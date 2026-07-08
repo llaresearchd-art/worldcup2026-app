@@ -27,7 +27,17 @@ export function sortByDateDesc(matches: Match[]): Match[] {
 }
 
 export function nextMatch(matches: Match[]): Match | null {
-  const upcoming = sortByDateAsc(matches.filter(isUpcoming));
+  const now = Date.now();
+  const upcoming = sortByDateAsc(
+    matches.filter(m => {
+      if (!isUpcoming(m)) return false;
+      // Don't show as "Up Next" if kickoff was more than 2 hours ago —
+      // the match is almost certainly over, API just hasn't updated yet.
+      const kickoff = new Date(m.utcDate).getTime();
+      const elapsed = (now - kickoff) / 60_000;
+      return elapsed < 120;
+    })
+  );
   return upcoming[0] ?? null;
 }
 
